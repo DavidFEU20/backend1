@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using WebApi.Data;
 using WebApi.Models;
 
@@ -76,12 +77,28 @@ namespace WebApi.Controllers
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        public async Task<ActionResult<User>> PostUser(CreateUser model)
         {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            var customer = await _context.Users.Where(x => x.Email == model.Email).FirstOrDefaultAsync();
+
+            if (customer == null)
+            {
+                var _user = new User
+                {
+
+                    Firstname = model.Firstname,
+                    Lastname = model.Lastname,
+                    Email = model.Email
+                };
+
+                _context.Users.Add(_user);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction("GetUser", new { id = _user.Id }, _user);
+            }
+
+            return new BadRequestObjectResult(JsonConvert.SerializeObject(new { message = $"User {model.Email} already exists." }));
         }
 
         // DELETE: api/Users/5
